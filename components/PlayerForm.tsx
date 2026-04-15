@@ -92,7 +92,7 @@ export default function PlayerForm({ initial }: Props) {
         <div style={{ gridColumn: '1 / -1' }} className="flex">
           <button className="button" type="submit">Guardar jugador</button>
           {initial?.id ? (
-            <button className="button danger" type="submit" formaction="/api/players?delete=1">Eliminar</button>
+            <button className="button danger" type="submit" formAction="/api/players?delete=1">Eliminar</button>
           ) : null}
         </div>
       </form>
