@@ -8,9 +8,9 @@ export async function POST(request: Request) {
   const password = String(form.get('password') || '');
 
   if (username !== env.APP_ADMIN_USER || password !== env.APP_ADMIN_PASS) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  return NextResponse.redirect(new URL('/login', request.url), 303);
+}
 
-  await createSession(username);
-  return NextResponse.redirect(new URL('/dashboard', request.url));
+await createSession(username);
+return NextResponse.redirect(new URL('/dashboard', request.url), 303);
 }
