@@ -43,5 +43,5 @@ export async function POST(request: Request) {
     await supabase.from('jugadores').insert(payload);
   }
 
-  return NextResponse.redirect(new URL('/dashboard', request.url));
+  return NextResponse.redirect(new URL('/dashboard', request.url), 303);
 }
