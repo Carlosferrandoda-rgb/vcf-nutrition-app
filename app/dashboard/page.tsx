@@ -1,5 +1,3 @@
-const ok = await isAuthenticated();
-if (!ok) redirect('/login');
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import PlayerForm from '@/components/PlayerForm';
 import FoodCalculator from '@/components/FoodCalculator';
