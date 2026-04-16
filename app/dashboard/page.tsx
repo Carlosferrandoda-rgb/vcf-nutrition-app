@@ -10,8 +10,6 @@ function statusBadge(ratio: number) {
 }
 
 export default async function Dashboard({ searchParams }: { searchParams?: Promise<Record<string, string>> }) {
-  const ok = await isAuthenticated();
-  if (!ok) redirect('/login');
 
   const params = (await searchParams) || {};
   const selectedId = params.player;
