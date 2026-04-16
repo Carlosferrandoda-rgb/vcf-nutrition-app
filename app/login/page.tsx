@@ -4,7 +4,7 @@ export default function LoginPage() {
       <div className="card stack">
         <div>
           <h1 className="heroTitle">VCF Nutrición</h1>
-          <p className="muted">Acceso privado para staff. No hay registro público.</p>
+          <p className="muted">Acceso privado para staff. Login actualizado.</p>
         </div>
         <form method="post" action="/api/login" className="stack">
           <div>
