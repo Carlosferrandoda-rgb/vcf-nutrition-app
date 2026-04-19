@@ -8,11 +8,16 @@ function esHojaJugador(nombre: string) {
   return !HOJAS_IGNORAR.some(h => nombre.includes('INFORME') || nombre === 'Individual');
 }
 
+function safeDate(val: any): string | null {
+    if (!val) return null;
+    try { const d = new Date(val); return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0]; } catch { return null; }
+}
+
 function extraerUltimaMedicion(filas: Record<string, any>[]) {
-  const validas = filas.filter(f => f['NOMBRE'] && f['FECHA MEDICION'] && f['Peso (Kg)']);
-  if (validas.length === 0) return null;
-  validas.sort((a, b) => new Date(b['FECHA MEDICION']).getTime() - new Date(a['FECHA MEDICION']).getTime());
-  return validas[0];
+    const validas = filas.filter(f => f['NOMBRE'] && f['Peso (Kg)'] && safeDate(f['FECHA MEDICION']));
+    if (validas.length === 0) return null;
+    validas.sort((a, b) => (safeDate(b['FECHA MEDICION']) ?? '').localeCompare(safeDate(a['FECHA MEDICION']) ?? ''));
+    return validas[0];
 }
 
 function parsearJugador(hoja: string, filas: Record<string, any>[]) {
@@ -30,8 +35,8 @@ function parsearJugador(hoja: string, filas: Record<string, any>[]) {
     _nombre_completo: nombre,
     nombre: partes[0] || nombre,
     apellidos: partes.slice(1).join(' ') || '',
-    fecha_nacimiento: medicion['FECHA NACIMIENTO'] ? new Date(medicion['FECHA NACIMIENTO']).toISOString().split('T')[0] : null,
-    fecha_ultima_medicion: medicion['FECHA MEDICION'] ? new Date(medicion['FECHA MEDICION']).toISOString().split('T')[0] : null,
+        fecha_nacimiento: safeDate(medicion['FECHA NACIMIENTO']),
+        fecha_ultima_medicion: safeDate(medicion['FECHA MEDICION']),
     altura_cm: Number(medicion['Estatura (cm)']) || null,
     peso_kg: peso || null,
     porcentaje_grasa: grasa_faulkner || null,
