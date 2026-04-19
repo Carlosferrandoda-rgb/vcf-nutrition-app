@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import PlayerForm from '@/components/PlayerForm';
 import FoodCalculator from '@/components/FoodCalculator';
 import ExcelImporter from '@/components/ExcelImporter';
+import AnthroImporter from '@/components/AnthroImporter';
 
 function statusBadge(ratio: number) {
   if (ratio >= 0.9) return { text: 'Bien', cls: 'ok' };
@@ -77,6 +78,7 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
               </div>
             ) : <p className="muted">Añade tu primer jugador.</p>}
           </div>
+                    <AnthroImporter />
           <ExcelImporter />
         </div>
       </div>
