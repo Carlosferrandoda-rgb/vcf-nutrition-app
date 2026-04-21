@@ -4,38 +4,29 @@ import FoodCalculator from '@/components/FoodCalculator';
 import ExcelImporter from '@/components/ExcelImporter';
 import AnthroImporter from '@/components/AnthroImporter';
 
-function statusBadge(ratio: number) {
-  if (ratio >= 0.9) return { text: 'Bien', cls: 'ok' };
-  if (ratio >= 0.75) return { text: 'Atención', cls: 'warn' };
-  return { text: 'Riesgo', cls: 'bad' };
-}
-
 export default async function Dashboard({ searchParams }: { searchParams?: Promise<Record<string, string>> }) {
-
   const params = (await searchParams) || {};
-  const selectedId = params.player;
   const supabase = getSupabaseAdmin();
   const { data: players } = await supabase
     .from('jugadores')
-    .select('id,nombre,apellidos,posicion,kcal_objetivo,cho_objetivo_g,proteina_objetivo_g,grasa_objetivo_g,agua_objetivo_ml,peso_kg,porcentaje_grasa,masa_magra_kg,altura_cm,gustos_preferencias,contexto_clinico,objetivo,factor_actividad')
+    .select('id,nombre,apellidos,posicion,kcal_objetivo,peso_kg,porcentaje_grasa,masa_magra_kg,altura_cm,gustos_preferencias,contexto_clinico,objetivo,factor_actividad,cho_objetivo_g,proteina_objetivo_g,grasa_objetivo_g,agua_objetivo_ml')
     .order('nombre');
-
-  const selected = selectedId ? players?.find((p) => String(p.id) === String(selectedId)) : players?.[0] ?? null;
   const totalPlayers = players?.length ?? 0;
+  const avgKcal = players?.length ? Math.round(players.reduce((a, p) => a + Number(p.kcal_objetivo || 0), 0) / players.length) : 0;
 
   return (
     <div className="container">
       <div className="between topbar">
         <div>
           <h1 className="heroTitle">Panel VCF Nutrición</h1>
-          <p className="muted">Versión base profesional para Vercel + Supabase. Sin acceso público de jugadores.</p>
+          <p className="muted">Temporada 2025/26 · Solo staff</p>
         </div>
         <form method="post" action="/api/logout"><button className="button secondary">Salir</button></form>
       </div>
 
       <div className="grid grid-3" style={{ marginBottom: 16 }}>
         <div className="kpi"><span className="muted small">Jugadores activos</span><strong>{totalPlayers}</strong></div>
-        <div className="kpi"><span className="muted small">Objetivo kcal medio</span><strong>{players?.length ? Math.round(players.reduce((a, p) => a + Number(p.kcal_objetivo || 0), 0) / players.length) : 0}</strong></div>
+        <div className="kpi"><span className="muted small">Kcal medio equipo</span><strong>{avgKcal || '—'}</strong></div>
         <div className="kpi"><span className="muted small">Acceso</span><strong>Solo staff</strong></div>
       </div>
 
@@ -44,41 +35,35 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
           <div className="card stack">
             <div className="between">
               <h3 style={{ margin: 0 }}>Jugadores</h3>
-              <a className="button secondary" href="/dashboard">Nuevo</a>
+              <a className="button secondary" href="/dashboard">+ Nuevo</a>
             </div>
-            <div className="stack">
-              {players?.map((player) => {
-                const ratio = Number(player.kcal_objetivo || 0) / Math.max(Number(player.kcal_objetivo || 1), 1);
-                const badge = statusBadge(ratio);
-                const active = selected && String(selected.id) === String(player.id);
-                return (
-                  <a key={player.id} href={`/dashboard?player=${player.id}`} className={`playerItem ${active ? 'active' : ''}`}>
+            {players && players.length > 0 ? (
+              <div className="stack" style={{ gap: 4 }}>
+                {players.map((player) => (
+                  <a key={player.id} href={'/dashboard/jugador/' + player.id}
+                    style={{ display: 'block', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', textDecoration: 'none', color: 'inherit', transition: 'background 0.15s' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg2)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                     <div className="between">
-                      <strong>{player.nombre} {player.apellidos}</strong>
-                      <span className={`badge ${badge.cls}`}>{badge.text}</span>
+                      <strong style={{ fontSize: 14 }}>{player.nombre} {player.apellidos}</strong>
+                      <span className="muted small">{player.kcal_objetivo ? player.kcal_objetivo + ' kcal' : '—'}</span>
                     </div>
-                    <div className="small muted">{player.posicion || 'Sin posición'} · {player.kcal_objetivo || 0} kcal</div>
+                    <div className="muted small" style={{ marginTop: 2 }}>
+                      {player.posicion || 'Sin posición'}{player.peso_kg ? ' · ' + player.peso_kg + ' kg' : ''}{player.porcentaje_grasa ? ' · ' + player.porcentaje_grasa + '% grasa' : ''}
+                    </div>
                   </a>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">Aún no hay jugadores. Añade uno o importa un Excel.</p>
+            )}
           </div>
           <FoodCalculator />
         </div>
 
         <div className="stack">
-          <PlayerForm initial={selected} />
-          <div className="card stack">
-            <h3 style={{ margin: 0 }}>Resumen del jugador</h3>
-            {selected ? (
-              <div className="grid grid-3">
-                <div className="kpi"><span className="muted small">Peso / % grasa</span><strong>{selected.peso_kg ?? '—'} / {selected.porcentaje_grasa ?? '—'}</strong></div>
-                <div className="kpi"><span className="muted small">Masa magra</span><strong>{selected.masa_magra_kg ?? '—'} kg</strong></div>
-                <div className="kpi"><span className="muted small">Agua objetivo</span><strong>{selected.agua_objetivo_ml ?? '—'} ml</strong></div>
-              </div>
-            ) : <p className="muted">Añade tu primer jugador.</p>}
-          </div>
-                    <AnthroImporter />
+          <PlayerForm initial={null} />
+          <AnthroImporter />
           <ExcelImporter />
         </div>
       </div>
