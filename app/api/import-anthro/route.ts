@@ -2,69 +2,87 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import * as XLSX from 'xlsx';
 
-const HOJAS_IGNORAR = ['INFORME19-2-26', 'INFORME 16-3-26', 'Individual'];
-
 function esHojaJugador(nombre: string) {
-  return !HOJAS_IGNORAR.some(h => nombre.includes('INFORME') || nombre === 'Individual');
+  return !nombre.includes('INFORME') && nombre !== 'Individual';
 }
 
 function safeDate(val: any): string | null {
-    if (!val) return null;
-    try { const d = new Date(val); return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0]; } catch { return null; }
+  if (!val) return null;
+  try { const d = new Date(val); return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0]; } catch { return null; }
+}
+
+function safeNum(val: any): number | null {
+  if (val === null || val === undefined || val === '') return null;
+  const n = Number(val);
+  return isNaN(n) ? null : (n === 0 ? null : n);
+}
+
+function getFecha(f: Record<string, any>): any {
+  return f['FECHA MEDICION'] ?? f['FECHA MEDICIÓN'] ?? f['Fecha'] ?? null;
+}
+
+function getNombre(f: Record<string, any>): string {
+  return String(f['NOMBRE'] ?? f['Nombre'] ?? f['nombre'] ?? '').trim();
 }
 
 function extraerUltimaMedicion(filas: Record<string, any>[]) {
-    const validas = filas.filter(f => f['NOMBRE'] && f['Peso (Kg)'] && safeDate(f['FECHA MEDICION']));
-    if (validas.length === 0) return null;
-    validas.sort((a, b) => (safeDate(b['FECHA MEDICION']) ?? '').localeCompare(safeDate(a['FECHA MEDICION']) ?? ''));
-    return validas[0];
+  const validas = filas.filter(f => {
+    const nombre = getNombre(f);
+    const peso = safeNum(f['Peso (Kg)'] ?? f['Peso (kg)']);
+    return nombre !== '' && peso !== null;
+  });
+  if (validas.length === 0) return null;
+  validas.sort((a, b) => {
+    const fa = safeDate(getFecha(a)) ?? '0';
+    const fb = safeDate(getFecha(b)) ?? '0';
+    return fb.localeCompare(fa);
+  });
+  return validas[0];
 }
 
 function parsearJugador(hoja: string, filas: Record<string, any>[]) {
-  const medicion = extraerUltimaMedicion(filas);
-  if (!medicion) return null;
-
-  const nombre = String(medicion['NOMBRE'] || hoja).trim();
+  const m = extraerUltimaMedicion(filas);
+  if (!m) return null;
+  const nombre = getNombre(m) || hoja;
   const partes = nombre.split(' ');
-  const peso = Number(medicion['Peso (Kg)'] || 0);
-  const grasa_faulkner = Number(medicion['% grasa FAULKNER'] || 0);
-  const peso_magro = Number(medicion['Peso Magro'] || 0);
-  const masa_magra = peso_magro || peso * (1 - grasa_faulkner / 100);
-
+  const peso = safeNum(m['Peso (Kg)'] ?? m['Peso (kg)']);
+  const grasa = safeNum(m['% grasa FAULKNER']);
+  const peso_magro = safeNum(m['Peso Magro']);
+  const masa_magra = peso_magro ?? (peso && grasa ? Math.round(peso * (1 - grasa / 100) * 10) / 10 : null);
   return {
     _nombre_completo: nombre,
     nombre: partes[0] || nombre,
     apellidos: partes.slice(1).join(' ') || '',
-        fecha_nacimiento: safeDate(medicion['FECHA NACIMIENTO']),
-        fecha_ultima_medicion: safeDate(medicion['FECHA MEDICION']),
-    altura_cm: Number(medicion['Estatura (cm)']) || null,
-    peso_kg: peso || null,
-    porcentaje_grasa: grasa_faulkner || null,
-    masa_magra_kg: masa_magra ? Math.round(masa_magra * 10) / 10 : null,
-    pliegue_biceps: Number(medicion['Pliegue Biceps']) || null,
-    pliegue_triceps: Number(medicion['Pliegue Triceps']) || null,
-    pliegue_subescapular: Number(medicion['Pliegue Subescapular']) || null,
-    pliegue_cresta_iliaca: Number(medicion['Pliegue Cresta iliaca']) || null,
-    pliegue_supraeliaco: Number(medicion['Pliegue Supraeliaco']) || null,
-    pliegue_abdominal: Number(medicion['Pliegue Abdominal']) || null,
-    pliegue_pantorrilla: Number(medicion['Pliegue Pantorrilla Derecha']) || null,
-    pliegue_muslo: Number(medicion['Pliegue Muslo Derecho']) || null,
-    suma_6_pliegues: Number(medicion['Suma 6 Pliegues']) || null,
-    suma_8_pliegues: Number(medicion['Suma 8 Pliegues']) || null,
-    porcentaje_grasa_faulkner: grasa_faulkner || null,
-    porcentaje_grasa_yuhasz: Number(medicion['% grasa YUHASZ']) || null,
-    peso_oseo: Number(medicion['Peso Oseo']) || null,
-    peso_residual: Number(medicion['Peso Residual']) || null,
-    peso_graso: Number(medicion['Peso Graso']) || null,
-    peso_muscular: Number(medicion['Peso Muscular Lee&cols']) || null,
-    peso_magro: peso_magro || null,
-    peso_deseable: Number(medicion['Peso deseable']) || null,
-    endomorfia: Number(medicion['ENDO']) || null,
-    mesomorfia: Number(medicion['MESO']) || null,
-    ectomorfia: Number(medicion['ECTO']) || null,
-    perimetro_brazo_contraido: Number(medicion['Perimetro Brazo Contraido Derecho']) || null,
-    perimetro_pantorrilla: Number(medicion['Perimetro Pantorrilla Derecha']) || null,
-    perimetro_muslo: Number(medicion['Perimetro Muslo Derecho']) || null,
+    fecha_nacimiento: safeDate(m['FECHA NACIMIENTO']),
+    fecha_ultima_medicion: safeDate(getFecha(m)),
+    altura_cm: safeNum(m['Estatura (cm)']),
+    peso_kg: peso,
+    porcentaje_grasa: grasa,
+    masa_magra_kg: masa_magra,
+    pliegue_biceps: safeNum(m['Pliegue Bíceps'] ?? m['Pliegue Biceps']),
+    pliegue_triceps: safeNum(m['Pliegue Tríceps'] ?? m['Pliegue Triceps']),
+    pliegue_subescapular: safeNum(m['Pliegue Subescapular']),
+    pliegue_cresta_iliaca: safeNum(m['Pliegue Cresta ilíaca'] ?? m['Pliegue Cresta iliaca']),
+    pliegue_supraeliaco: safeNum(m['Pliegue Suprailíaco'] ?? m['Pliegue Supraeliaco']),
+    pliegue_abdominal: safeNum(m['Pliegue Abdominal']),
+    pliegue_pantorrilla: safeNum(m['Pliegue Pantorrilla Derecha']),
+    pliegue_muslo: safeNum(m['Pliegue Muslo Derecho']),
+    suma_6_pliegues: safeNum(m['Suma 6 Pliegues']),
+    suma_8_pliegues: safeNum(m['Suma 8 Pliegues']),
+    porcentaje_grasa_faulkner: grasa,
+    porcentaje_grasa_yuhasz: safeNum(m['% grasa YUHASZ']),
+    peso_oseo: safeNum(m['Peso Oseo'] ?? m['Peso Óseo']),
+    peso_residual: safeNum(m['Peso Residual']),
+    peso_graso: safeNum(m['Peso Graso']),
+    peso_muscular: safeNum(m['Peso Muscular Lee&cols']),
+    peso_magro: peso_magro,
+    peso_deseable: safeNum(m['Peso deseable']),
+    endomorfia: safeNum(m['ENDO']),
+    mesomorfia: safeNum(m['MESO']),
+    ectomorfia: safeNum(m['ECTO']),
+    perimetro_brazo_contraido: safeNum(m['Perímetro Brazo Contraído Derecho']),
+    perimetro_pantorrilla: safeNum(m['Perímetro Pantorrilla Derecha']),
+    perimetro_muslo: safeNum(m['Perímetro Muslo Derecho']),
   };
 }
 
@@ -73,39 +91,25 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const archivo = formData.get('file') as File | null;
     const modo = formData.get('modo') as string | null;
-
-    if (!archivo) return NextResponse.json({ error: 'No se recibio ningun archivo' }, { status: 400 });
-
+    if (!archivo) return NextResponse.json({ error: 'Sin archivo' }, { status: 400 });
     const buffer = Buffer.from(await archivo.arrayBuffer());
     const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
-
     const jugadores: ReturnType<typeof parsearJugador>[] = [];
-
     for (const nombreHoja of workbook.SheetNames) {
       if (!esHojaJugador(nombreHoja)) continue;
-      const hoja = workbook.Sheets[nombreHoja];
-      const filas = XLSX.utils.sheet_to_json<Record<string, any>>(hoja, { defval: null, raw: false });
-      const jugador = parsearJugador(nombreHoja, filas);
-      if (jugador) jugadores.push(jugador);
+      const filas = XLSX.utils.sheet_to_json<Record<string, any>>(workbook.Sheets[nombreHoja], { defval: null, raw: false });
+      const j = parsearJugador(nombreHoja, filas);
+      if (j) jugadores.push(j);
     }
-
     if (modo === 'preview') return NextResponse.json({ jugadores });
-
     const supabase = getSupabaseAdmin();
+    const selStr = formData.get('seleccionados') as string | null;
+    const sel: string[] = selStr ? JSON.parse(selStr) : jugadores.map(j => j?._nombre_completo).filter(Boolean);
     const resultados = [];
-    const seleccionados: string[] = formData.get('seleccionados') ? JSON.parse(formData.get('seleccionados') as string) : jugadores.map(j => j?._nombre_completo);
-
     for (const j of jugadores) {
-      if (!j || !seleccionados.includes(j._nombre_completo)) continue;
+      if (!j || !sel.includes(j._nombre_completo)) continue;
       const { _nombre_completo, ...datos } = j;
-
-      const { data: existente } = await supabase
-        .from('jugadores')
-        .select('id')
-        .ilike('nombre', `%${datos.nombre}%`)
-        .limit(1)
-        .single();
-
+      const { data: existente } = await supabase.from('jugadores').select('id').ilike('nombre', '%' + datos.nombre + '%').limit(1).single();
       if (existente) {
         const { error } = await supabase.from('jugadores').update(datos).eq('id', existente.id);
         resultados.push({ nombre: _nombre_completo, accion: 'actualizado', error: error?.message });
@@ -114,7 +118,6 @@ export async function POST(req: NextRequest) {
         resultados.push({ nombre: _nombre_completo, accion: 'creado', error: error?.message });
       }
     }
-
     return NextResponse.json({ ok: true, resultados });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
