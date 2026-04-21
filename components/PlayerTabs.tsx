@@ -13,9 +13,7 @@ function EditableSection({ title, defaultValue, onSave }: { title: string; defau
   async function handleSave() {
     setSaving(true);
     await onSave(value);
-    setSaving(false);
-    setSaved(true);
-    setEditing(false);
+    setSaving(false); setSaved(true); setEditing(false);
     setTimeout(() => setSaved(false), 2000);
   }
   return (
@@ -23,7 +21,7 @@ function EditableSection({ title, defaultValue, onSave }: { title: string; defau
       <div className="between">
         <h3 style={{ margin: 0 }}>{title}</h3>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {saved && <span style={{ color: '#166534', fontSize: 13 }}>Guardado</span>}
+          {saved && <span style={{ color: '#166534', fontSize: 13 }}>✓ Guardado</span>}
           {!editing ? (
             <button className="button secondary" onClick={() => setEditing(true)} style={{ padding: '4px 12px', fontSize: 13 }}>Editar</button>
           ) : (
@@ -57,9 +55,9 @@ export default function PlayerTabs({ jugador }: { jugador: Jugador }) {
   const CONTEXTOS = [
     { value: 'semana_normal', label: 'Semana normal' },
     { value: 'semana_partido', label: 'Semana de partido' },
-    { value: 'dia_partido', label: 'Dia de partido' },
-    { value: 'viaje', label: 'Viaje' },
-    { value: 'lesion', label: 'Lesion' },
+    { value: 'dia_partido', label: 'Día de partido' },
+    { value: 'viaje', label: 'Viaje / desplazamiento' },
+    { value: 'lesion', label: 'Lesión / inactividad' },
     { value: 'vacaciones', label: 'Vacaciones' },
     { value: 'pretemporada', label: 'Pretemporada' },
   ];
@@ -79,64 +77,68 @@ export default function PlayerTabs({ jugador }: { jugador: Jugador }) {
   const aguaBase = peso ? Math.round(peso * 40) : 0;
   const aguaEntreno = peso ? Math.round(peso * 6) : 0;
   const aguaPartido = peso ? Math.round(peso * 10) : 0;
-  const cafMin = peso ? Math.round(peso*3) : 200;
-  const cafMax = peso ? Math.round(peso*6) : 400;
-  const hidDef = 'HIDRATACION - ' + jugador.nombre + ' ' + jugador.apellidos + '
-
-Descanso: ' + aguaBase + ' ml
-Entrenamiento: ' + (aguaBase+aguaEntreno) + ' ml
-Partido: ' + (aguaBase+aguaPartido) + ' ml
-
-TIMING:
-- Al despertar: 500 ml
-- Pre-entreno: 500 ml + electrolitos
-- Durante entreno: 150-200 ml / 15 min
-- Post-entreno: 150% perdida
-- Con comidas: 300 ml
-
-NOTAS:
-';
-  const supDef = 'SUPLEMENTACION - ' + jugador.nombre + ' ' + jugador.apellidos + '
-
-EVIDENCIA A:
-- Creatina: 3-5 g/dia post-entreno
-- Cafeina: ' + cafMin + '-' + cafMax + ' mg · 60 min pre-partido
-- Beta-alanina: 3.2-6.4 g/dia
-
-MICRONUTRIENTES:
-- Vitamina D3: 2000-4000 UI/dia
-- Omega-3: 2-4 g EPA+DHA
-- Magnesio: 300-400 mg noche
-
-RECUPERACION:
-- Proteina whey: 20-40 g post-entreno
-- Cerezas Montmorency: 30 ml x2
-- Zumo remolacha: 500 ml (2-3h pre-partido)
-
-NOTAS ANALITICA:
-';
-  const protDef = 'PROTOCOLO PREPARTIDO - ' + jugador.nombre + ' ' + jugador.apellidos + '
-
--3/-4h | COMIDA PRINCIPAL:
-- CHO: arroz/pasta/patata
-- Proteina: pollo/pavo/pescado 100-150g
-- Evitar: grasas, fibra alta
-
--90 min | SNACK:
-- Platano o gel energetico
-
--60 min | CAFEINA:
-- ' + cafMin + '-' + cafMax + ' mg si hay tolerancia
-
-MEDIO TIEMPO:
-- 300-500 ml isotonica
-
-POST-PARTIDO +30min:
-- Proteina 20-40g + CHO rapidos
-- Rehidratacion completa
-
-NOTAS:
-';
+  const cafMin = peso ? Math.round(peso * 3) : 200;
+  const cafMax = peso ? Math.round(peso * 6) : 400;
+  const hidDef = [
+    'HIDRATACION - ' + jugador.nombre + ' ' + jugador.apellidos,
+    '',
+    'Descanso: ' + aguaBase + ' ml | Entreno: ' + (aguaBase+aguaEntreno) + ' ml | Partido: ' + (aguaBase+aguaPartido) + ' ml',
+    '',
+    'TIMING:',
+    '- Al despertar: 500 ml',
+    '- Pre-entreno: 500 ml + electrolitos',
+    '- Durante entreno: 150-200 ml / 15 min',
+    '- Post-entreno: 150% perdida',
+    '- Con comidas: 300 ml',
+    '',
+    'NOTAS:',
+    '(Personaliza aqui)',
+  ].join('\n');
+  const supDef = [
+    'SUPLEMENTACION - ' + jugador.nombre + ' ' + jugador.apellidos,
+    '',
+    'EVIDENCIA A:',
+    '- Creatina: 3-5 g/dia post-entreno',
+    '- Cafeina: ' + cafMin + '-' + cafMax + ' mg x 60 min pre-partido',
+    '- Beta-alanina: 3.2-6.4 g/dia con comidas',
+    '',
+    'MICRONUTRIENTES:',
+    '- Vitamina D3: 2000-4000 UI/dia',
+    '- Omega-3: 2-4 g EPA+DHA',
+    '- Magnesio: 300-400 mg noche',
+    '',
+    'RECUPERACION:',
+    '- Proteina whey: 20-40 g post-entreno',
+    '- Cerezas Montmorency: 30 ml x2',
+    '- Zumo remolacha: 500 ml (2-3h pre-partido)',
+    '',
+    'NOTAS ANALITICA:',
+    '(Ajustar segun ultima analitica)',
+  ].join('\n');
+  const protDef = [
+    'PROTOCOLO PREPARTIDO - ' + jugador.nombre + ' ' + jugador.apellidos,
+    '',
+    '-3/-4h | COMIDA PRINCIPAL:',
+    '- CHO: arroz / pasta / patata',
+    '- Proteina magra: pollo / pavo 100-150g',
+    '- Evitar: grasas, fibra alta, novedades',
+    '',
+    '-90 min | SNACK:',
+    '- Platano maduro o gel energetico',
+    '',
+    '-60 min | CAFEINA (si procede):',
+    '- ' + cafMin + '-' + cafMax + ' mg si hay tolerancia',
+    '',
+    'MEDIO TIEMPO:',
+    '- 300-500 ml isotonica',
+    '',
+    'POST-PARTIDO +30min:',
+    '- Proteina 20-40g + CHO rapidos',
+    '- Rehidratacion completa',
+    '',
+    'NOTAS:',
+    '(Preferencias y ajustes del jugador)',
+  ].join('\n');
   return (
     <div className="stack">
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
@@ -151,7 +153,7 @@ NOTAS:
         <div className="stack">
           <div className="grid grid-3">
             <div className="card"><span className="muted small">Kcal objetivo</span><strong style={{ display:'block', fontSize:22 }}>{jugador.kcal_objetivo ?? '-'}</strong></div>
-            <div className="card"><span className="muted small">Proteina</span><strong style={{ display:'block', fontSize:22 }}>{jugador.proteina_objetivo_g ? jugador.proteina_objetivo_g+'g' : '-'}</strong></div>
+            <div className="card"><span className="muted small">Proteína</span><strong style={{ display:'block', fontSize:22 }}>{jugador.proteina_objetivo_g ? jugador.proteina_objetivo_g+'g' : '-'}</strong></div>
             <div className="card"><span className="muted small">CHO</span><strong style={{ display:'block', fontSize:22 }}>{jugador.cho_objetivo_g ? jugador.cho_objetivo_g+'g' : '-'}</strong></div>
             <div className="card"><span className="muted small">Grasa</span><strong style={{ display:'block', fontSize:22 }}>{jugador.grasa_objetivo_g ? jugador.grasa_objetivo_g+'g' : '-'}</strong></div>
             <div className="card"><span className="muted small">Masa magra</span><strong style={{ display:'block', fontSize:22 }}>{jugador.masa_magra_kg ? jugador.masa_magra_kg+' kg' : '-'}</strong></div>
@@ -177,7 +179,7 @@ NOTAS:
               <select value={contexto} onChange={e => setContexto(e.target.value)} style={{ padding:'6px 10px', borderRadius:6, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--fg)' }}>
                 {CONTEXTOS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
-              <button className="button" onClick={generarPlan} disabled={loadingPlan}>{loadingPlan ? 'Generando...' : 'Generar plan'}</button>
+              <button className="button" onClick={generarPlan} disabled={loadingPlan}>{loadingPlan ? 'Generando...' : '✨ Generar plan'}</button>
             </div>
           </div>
           {errorPlan && <div style={{ padding:12, background:'#fee2e2', borderRadius:8, color:'#991b1b', fontSize:13 }}>{errorPlan}</div>}
@@ -195,7 +197,7 @@ NOTAS:
         </div>
       )}
       {tab === 'Suplementación' && (
-        <EditableSection title="Protocolo de suplementacion" defaultValue={jugador.notas_suplementacion || supDef} onSave={v => saveField('notas_suplementacion', v)} />
+        <EditableSection title="Protocolo de suplementación" defaultValue={jugador.notas_suplementacion || supDef} onSave={v => saveField('notas_suplementacion', v)} />
       )}
       {tab === 'Protocolos' && (
         <EditableSection title="Protocolo prepartido" defaultValue={jugador.notas_protocolos || protDef} onSave={v => saveField('notas_protocolos', v)} />
