@@ -21,40 +21,50 @@ export async function POST(req: NextRequest) {
     const proteina = jugador.proteina_objetivo_g || Math.round((jugador.masa_magra_kg || 70) * 1.8);
     const cho = jugador.cho_objetivo_g || Math.round((jugador.peso_kg || 80) * 5);
     const grasa = jugador.grasa_objetivo_g || Math.round((kcal - proteina * 4 - cho * 4) / 9);
+    const numComidas = jugador.num_comidas || 5;
 
-    const prompt = `Eres Carlos Ferrando, nutricionista deportivo del Valencia CF con 20 años de experiencia. Genera un plan nutricional detallado y práctico para este jugador.
+    const restricciones = [
+      jugador.alergias ? '⚠️ ALERGIAS (OBLIGATORIO EVITAR): ' + jugador.alergias : null,
+      jugador.intolerancias ? '⚠️ INTOLERANCIAS (OBLIGATORIO EVITAR): ' + jugador.intolerancias : null,
+      jugador.aversiones ? '❌ AVERSIONES (no incluir): ' + jugador.aversiones : null,
+    ].filter(Boolean).join('\n');
+
+    const prompt = `Eres Carlos Ferrando, nutricionista del Valencia CF. Genera un plan nutricional PERSONALIZADO y detallado.
 
 DATOS DEL JUGADOR:
 - Nombre: ${jugador.nombre} ${jugador.apellidos}
 - Posición: ${jugador.posicion || 'No especificada'}
-- Peso: ${jugador.peso_kg || '?'} kg | Altura: ${jugador.altura_cm || '?'} cm
-- Masa magra: ${jugador.masa_magra_kg || '?'} kg | % Grasa: ${jugador.porcentaje_grasa || '?'}%
+- Peso: ${jugador.peso_kg || '?'} kg | Masa magra: ${jugador.masa_magra_kg || '?'} kg | % Grasa: ${jugador.porcentaje_grasa || '?'}%
 - Somatotipo: ${jugador.endomorfia || '?'}-${jugador.mesomorfia || '?'}-${jugador.ectomorfia || '?'}
 
 OBJETIVOS NUTRICIONALES (Cunningham):
-- Kcal: ${kcal} kcal/día
-- Proteína: ${proteina} g/día (${((jugador.masa_magra_kg || 70) > 0 ? (proteina / (jugador.masa_magra_kg || 70)).toFixed(1) : '1.8')} g/kg masa magra)
-- CHO: ${cho} g/día
-- Grasa: ${grasa} g/día
+- Total: ${kcal} kcal/día
+- Proteína: ${proteina} g/día | CHO: ${cho} g/día | Grasa: ${grasa} g/día
 - Agua: ${jugador.agua_objetivo_ml || Math.round((jugador.peso_kg || 80) * 40)} ml/día
+- Número de comidas: ${numComidas} comidas/día
 
-CONTEXTO: ${CONTEXTOS[contexto] || contexto}
+PERFIL PERSONAL:
+- Objetivo específico: ${jugador.objetivo || 'Rendimiento deportivo óptimo'}
+- Gustos y preferencias: ${jugador.gustos_preferencias || 'No especificados'}
+${restricciones ? restricciones + '\n' : ''}
+- Contexto clínico: ${jugador.contexto_clinico || 'Sin particularidades'}
 
-GUSTOS/PREFERENCIAS: ${jugador.gustos_preferencias || 'No especificados'}
-CONTEXTO CLÍNICO: ${jugador.contexto_clinico || 'Sin particularidades'}
+CONTEXTO ACTUAL: ${CONTEXTOS[contexto] || contexto}
 
-GENERA:
-1. Plan de 5 días con desayuno, media mañana, comida, merienda y cena
-2. Timing específico según el contexto (horarios, pre/post entreno)
-3. Cantidades en gramos de los alimentos principales
-4. 2-3 recomendaciones específicas para el contexto dado
-5. Alimentos a priorizar y a evitar en este contexto
+GENERA UN PLAN PARA 5 DÍAS con exactamente ${numComidas} comidas por día.
+Para cada día incluye:
+1. Todas las comidas con horario sugerido
+2. Alimentos con cantidades en gramos
+3. Timing pre/post entreno según el contexto
+4. Evita SIEMPRE los alimentos con alergia e intolerancia
+5. Respeta las preferencias y aversiones
 
-Sé concreto, práctico y adaptado al fútbol profesional español. Usa alimentos mediterráneos accesibles.`;
+Al final añade 3-4 recomendaciones específicas para el contexto "${CONTEXTOS[contexto]}".
+Usa alimentos mediterráneos y accesibles en España.`;
 
     const message = await client.messages.create({
       model: 'claude-opus-4-5',
-      max_tokens: 2000,
+      max_tokens: 2500,
       messages: [{ role: 'user', content: prompt }],
     });
 
