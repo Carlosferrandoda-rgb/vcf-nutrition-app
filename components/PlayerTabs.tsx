@@ -143,8 +143,6 @@ export default function PlayerTabs({ jugador }: { jugador: Jugador }) {
   const supDef = ['SUPLEMENTACION - '+jugador.nombre+' '+jugador.apellidos,'','EVIDENCIA A:','- Creatina: 3-5 g/dia post-entreno','- Cafeina: '+cafMin+'-'+cafMax+' mg x 60 min pre-partido','- Beta-alanina: 3.2-6.4 g/dia','','MICRONUTRIENTES:','- Vitamina D3: 2000-4000 UI/dia','- Omega-3: 2-4 g EPA+DHA','- Magnesio: 300-400 mg noche','','NOTAS ANALITICA:',''].join('\n');
   const protDef = ['PROTOCOLO PREPARTIDO - '+jugador.nombre+' '+jugador.apellidos,'','-3/-4h | COMIDA PRINCIPAL:','- CHO: arroz/pasta/patata','- Proteina: 100-150g','','-90 min | SNACK: platano o gel','','-60 min | CAFEINA: '+cafMin+'-'+cafMax+' mg','','MEDIO TIEMPO: 300-500 ml isotonica','','POST +30min: proteina + CHO rapidos','','NOTAS:',''].join('\n');
 
-  const NUM_COMIDAS = ['3','4','5','6'].map(n => ({ value: n, label: n + ' comidas' }));
-
   return (
     <div className='stack'>
       <div style={{ display:'flex', gap:4, borderBottom:'1px solid var(--border)', marginBottom:8 }}>
