@@ -1,4 +1,6 @@
 'use client';
+import PlanIATab from './PlanIATab';
+
 import { useState } from 'react';
 
 type Jugador = Record<string, any>;
@@ -186,31 +188,7 @@ export default function PlayerTabs({ jugador }: { jugador: Jugador }) {
       )}
 
       {tab === 'Plan IA' && (
-        <div className='stack'>
-          <div className='card stack'>
-            <h3 style={{ margin:0 }}>Generar plan nutricional personalizado con IA</h3>
-            <div style={{ padding:10, background:'var(--bg2,#f8f8f8)', borderRadius:8, fontSize:12, color:'var(--muted)' }}>
-              <strong>Datos que usará la IA:</strong> {[
-                jugador.num_comidas ? jugador.num_comidas+' comidas/día' : null,
-                jugador.objetivo || null,
-                jugador.gustos_preferencias ? 'Gustos: '+jugador.gustos_preferencias.slice(0,40) : null,
-                jugador.aversiones ? 'Aversiones: '+jugador.aversiones.slice(0,40) : null,
-                jugador.intolerancias ? 'Intol: '+jugador.intolerancias.slice(0,40) : null,
-                jugador.alergias ? 'Alergias: '+jugador.alergias.slice(0,40) : null,
-              ].filter(Boolean).join(' · ') || 'Completa el perfil en la pestaña Resumen para un plan más preciso'}
-            </div>
-            <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-              <label className='muted small'>Contexto:</label>
-              <select value={contexto} onChange={e => setContexto(e.target.value)}
-                style={{ padding:'6px 10px', borderRadius:6, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--fg)', flex:1, minWidth:200 }}>
-                {CONTEXTOS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
-              <button className='button' onClick={generarPlan} disabled={loadingPlan}>{loadingPlan ? 'Generando...' : '✨ Generar plan'}</button>
-            </div>
-          </div>
-          {errorPlan && <div style={{ padding:12, background:'#fee2e2', borderRadius:8, color:'#991b1b', fontSize:13 }}>{errorPlan}</div>}
-          {plan && <div className='card' style={{ whiteSpace:'pre-wrap', lineHeight:1.7, fontSize:14 }}>{plan}</div>}
-        </div>
+        <PlanIATab jugador={jugador} />
       )}
 
       {tab === 'Hidratación' && (
